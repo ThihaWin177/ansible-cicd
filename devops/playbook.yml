@@ -1,3 +1,4 @@
+---
 - name: Deploy Next.js Docker container
   hosts: all
   become: yes
@@ -9,9 +10,9 @@
     CONTAINER_NAME: "{{ container_name }}"
 
   tasks:
-    - name: Run Apt Update
+    - name: Run Apt update
       apt:
-        Update_cache: yes
+        update_cache: yes
 
     - name: Install Docker
       apt:
@@ -22,7 +23,7 @@
       service:
         name: docker
         state: started
-        
+
     - name: Install Nginx
       apt:
         name: nginx
@@ -41,7 +42,7 @@
     - name: Pull Docker image
       docker_image:
         name: "{{ IMAGE_NAME }}"
-        source: pull 
+        source: pull
 
     - name: Run Docker container
       docker_container:
@@ -51,7 +52,7 @@
         pull: true
         restart_policy: always
         ports:
-          - "3001:3000" 
+          - "3001:3000"
 
     - name: Wait for container to start
       wait_for:
@@ -61,7 +62,7 @@
         timeout: 60
 
     - name: Check if Nginx config file exists
-      state:
+      stat:
         path: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
       register: nginx_config
 
@@ -69,21 +70,17 @@
       template:
         src: nginx.conf.j2
         dest: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
-        notify: Reload Nginx
+      notify: Reload Nginx
 
     - name: Enable Nginx site
       file:
         src: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
-        dest: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
+        dest: "/etc/nginx/sites-enabled/{{ DOMAIN_NAME }}"
         state: link
       when: not nginx_config.stat.exists
-      
+
   handlers:
     - name: Reload Nginx
       service:
         name: nginx
         state: reloaded
-
-      
-
-
